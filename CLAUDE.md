@@ -56,6 +56,13 @@ Byzantine Hallucination Consensus manual.
 Audience: senior devs 5y+ and math enthusiasts.
 Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 
+## Coding Rules
+- Comments: one line max, informal tone — no block comments, no docstrings
+- No emojis anywhere (code, docs, commits)
+- Commit messages: single short line
+- Branding: `authors = ["Felipe Carvajal Brown"]` in Cargo.toml
+- Fixes: root cause only — no test workarounds, no suppression
+
 ## Next Steps (in order)
 1. Write `state.py` — TypedDict with: draft_path, glossary_path, references_path, latex_content, image_map, svg_map, pdf_path, errors, approved
 2. Write `graph.py` — wire nodes + conditional edges

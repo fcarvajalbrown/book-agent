@@ -1,5 +1,12 @@
 # AGENTS.md — LangGraph Concepts for This Project
 
+## Coding Rules
+- Comments: one line max, informal tone — no block comments, no docstrings
+- No emojis anywhere (code, docs, commits)
+- Commit messages: single short line
+- Branding: `authors = ["Felipe Carvajal Brown"]` in Cargo.toml
+- Fixes: root cause only — no test workarounds, no suppression
+
 ## Core Mental Model
 Every node is a Python function: takes `state`, returns updated `state`.
 LangGraph decides the order. That's it.
