@@ -1,0 +1,20 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "book-agent"
+version = "0.1.0"
+description = "LangGraph pipeline for draft-to-PDF book generation"
+requires-python = ">=3.11"
+authors = [
+    { name = "Felipe Carvajal Brown" },
+]
+dependencies = [
+    "langgraph>=0.2.0",
+    "langchain-core>=0.3.0",
+    "cairosvg>=2.7.0",
+]
+
+[project.optional-dependencies]
+openai = ["langchain-openai>=0.2.0"]

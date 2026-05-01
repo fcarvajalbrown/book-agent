@@ -63,6 +63,10 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 - Branding: `authors = ["Felipe Carvajal Brown"]` in Cargo.toml
 - Fixes: root cause only — no test workarounds, no suppression
 
+## Workflow Rules
+- Work file by file in dependency order.
+- After each file: give a one-line summary of what was done, then wait for an explicit "go" before writing the next file.
+
 ## Next Steps (in order)
 1. Write `state.py` — TypedDict with: draft_path, glossary_path, references_path, latex_content, image_map, svg_map, pdf_path, errors, approved
 2. Write `graph.py` — wire nodes + conditional edges

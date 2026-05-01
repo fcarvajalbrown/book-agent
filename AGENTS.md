@@ -7,6 +7,10 @@
 - Branding: `authors = ["Felipe Carvajal Brown"]` in Cargo.toml
 - Fixes: root cause only — no test workarounds, no suppression
 
+## Workflow Rules
+- Work file by file in dependency order.
+- After each file: give a one-line summary of what was done, then wait for an explicit "go" before writing the next file.
+
 ## Core Mental Model
 Every node is a Python function: takes `state`, returns updated `state`.
 LangGraph decides the order. That's it.
