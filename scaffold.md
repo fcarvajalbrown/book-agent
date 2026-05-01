@@ -7,7 +7,10 @@ book-agent/
 │   ├── images/                # raster images (PNG/JPG, 300 PPI)
 │   └── svg/                   # SVG diagrams (rasterized before LaTeX)
 ├── nodes/
-│   ├── md_to_latex.py         # MD + math → LaTeX
+│   ├── md_to_latex/           # sub-graph: split → parallel convert → stitch
+│   │   ├── __init__.py
+│   │   ├── splitter.py
+│   │   └── sub_graph.py
 │   ├── rasterize_svg.py       # SVG → PNG at 300 PPI (cairosvg or inkscape CLI)
 │   ├── embed_images.py        # resolve image paths, enforce policy
 │   ├── apply_template.py      # inject Lulu geometry into .tex
@@ -20,6 +23,8 @@ book-agent/
 ├── templates/
 │   └── lulu_interior.tex      # Lulu geometry + font setup
 ├── config/
+│   ├── model_config.yaml      # LLM provider, model, base_url, api_key_env (gitignored)
+│   ├── model_config_example.yaml  # template for model_config.yaml
 │   ├── image_policy.yaml      # 300 PPI, sRGB, grayscale rules
 │   └── run_config.yaml        # per-run: draft path, book size, color mode
 ├── outputs/

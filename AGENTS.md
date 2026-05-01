@@ -127,23 +127,57 @@ langgraph
 langchain-core
 langchain-openai   # or langchain-anthropic — swap freely, graph is agnostic
 cairosvg           # SVG → PNG rasterization
+pyyaml             # config parsing
 ```
 
 ## LLM Calls Inside Nodes
-Nodes that need an LLM (e.g. md_to_latex, validate) use langchain-core:
+Nodes that need an LLM (e.g. md_to_latex, validate) use `config.get_llm()`:
 
 ```python
 from langchain_core.prompts import ChatPromptTemplate
-from langchain_openai import ChatOpenAI  # swap for any provider
+from config import get_llm
 
-llm = ChatOpenAI(model="gpt-4o")  # or ChatAnthropic, etc.
+llm = get_llm()  # reads config/model_config.yaml, returns any provider
+```
 
-def md_to_latex(state: BookState) -> BookState:
-    prompt = ChatPromptTemplate.from_template("Convert this MD to LaTeX:\n{draft}")
-    chain = prompt | llm
-    result = chain.invoke({"draft": open(state["draft_path"]).read()})
-    state["latex_content"] = result.content
-    return state
+Copy `config/model_config_example.yaml` to `config/model_config.yaml` (gitignored) and edit:
+
+```yaml
+provider: openai
+model: kimi-k2-6
+base_url: https://api.moonshot.cn/v1
+api_key_env: MOONSHOT_API_KEY
+temperature: 0.0
+```
+
+```python
+# Sub-graphs: a node can be an entire compiled graph.
+# Used here to chunk a long draft and parallelize LLM calls.
+# load_and_split checks heading conventions then recursively splits
+# by ## -> ### -> paragraph until each chunk fits MAX_CHUNK_CHARS.
+
+from langgraph.types import Send
+
+def load_and_split(state: dict):
+    # check conventions, then split draft into chunks
+    return {"chunks": [...], "errors": [...]}
+
+def convert_chunk(state: dict):
+    # each chunk gets its own LLM call
+    return {"fragments": [{"index": i, "latex": ...}]}
+
+def stitch(state: dict):
+    # join fragments in original order, forward errors
+    return {"latex_content": stitched, "errors": state.get("errors", [])}
+
+sub_builder = StateGraph(dict)
+sub_builder.add_node("load_and_split", load_and_split)
+sub_builder.add_node("convert_chunk", convert_chunk)
+sub_builder.add_node("stitch", stitch)
+sub_builder.set_entry_point("load_and_split")
+sub_builder.add_conditional_edges("load_and_split", lambda s: [Send("convert_chunk", {"chunk": c}) for c in s.get("chunks", [])])
+sub_builder.add_edge("convert_chunk", "stitch")
+md_to_latex = sub_builder.compile()
 ```
 
 ## Debugging
