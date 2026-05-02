@@ -79,7 +79,7 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 ## Coding Rules
 - Comments: one line max, informal tone — no block comments, no docstrings
 - No emojis anywhere (code, docs, commits)
-- Commit messages: single short line
+- Commit messages: **Conventional Commits**, single line, lowercase. Format: `<type>: <description>` where type is one of `feat`, `fix`, `docs`, `chore`, `refactor`, `test`, `build`, `style`, `perf`, `ci`. Examples: `fix: forward-slash image paths so xelatex finds them`, `feat: add figure-marker preprocessor`. Never noun-only summaries, never multi-line bodies unless explicitly requested.
 - Branding: `authors = ["Felipe Carvajal Brown"]` in Cargo.toml
 - Fixes: root cause only — no test workarounds, no suppression
 
