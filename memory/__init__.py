@@ -1,4 +1,6 @@
+import os
 import pickle
+import threading
 from collections import defaultdict
 from pathlib import Path
 
@@ -16,6 +18,7 @@ class FileSaver(InMemorySaver):
         super().__init__()
         self._dir = Path(dirpath)
         self._dir.mkdir(parents=True, exist_ok=True)
+        self._lock = threading.Lock()
         self.storage = defaultdict(_nested_defaultdict)
         self.writes = defaultdict(dict)
         self.blobs = {}
@@ -50,15 +53,21 @@ class FileSaver(InMemorySaver):
         return writes
 
     def _persist(self) -> None:
-        with open(self._state_file, "wb") as f:
-            pickle.dump(
-                {
-                    "storage": dict(self.storage),
-                    "writes": dict(self.writes),
-                    "blobs": self.blobs,
-                },
-                f,
-            )
+        # atomic: write to temp then replace, under a lock so parallel writes don't corrupt the file
+        with self._lock:
+            tmp = self._state_file.with_suffix(".pkl.tmp")
+            with open(tmp, "wb") as f:
+                pickle.dump(
+                    {
+                        "storage": dict(self.storage),
+                        "writes": dict(self.writes),
+                        "blobs": self.blobs,
+                    },
+                    f,
+                )
+                f.flush()
+                os.fsync(f.fileno())
+            os.replace(tmp, self._state_file)
 
     def put(self, config, checkpoint, metadata, new_versions):
         result = super().put(config, checkpoint, metadata, new_versions)

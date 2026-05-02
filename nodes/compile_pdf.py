@@ -22,7 +22,7 @@ def compile_pdf(state: BookState) -> BookState:
         # two-pass for cross-references and toc
         for _ in range(2):
             result = subprocess.run(
-                ["xelatex", "-interaction=nonstopmode", str(OUTPUT_TEX)],
+                ["xelatex", "-interaction=nonstopmode", OUTPUT_TEX.name],
                 cwd=str(OUTPUT_DIR),
                 capture_output=True,
                 text=True,
