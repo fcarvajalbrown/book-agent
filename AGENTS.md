@@ -20,6 +20,7 @@
 - Any file that may contain secrets must be gitignored, with an `_example` version committed in its place.
 - Mermaid diagrams belong in README.md. Do not create separate `.mmd` files.
 - The user is a senior developer who prefers root-cause fixes and dense, direct communication.
+- Moonshot API keys can return 401 for account-side reasons (unverified account, IP restrictions, disabled key) even when the request format is correct. Always verify with a raw HTTP test before blaming the code.
 
 ## Core Mental Model
 Every node is a Python function: takes `state`, returns updated `state`.

@@ -92,6 +92,7 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 - **Secrets go in gitignored files with `_example` templates committed.** (`model_config.yaml`, `.env`)
 - **Mermaid diagrams go in README.md, not separate files.** GitHub renders them inline.
 - **Do not create folders or files without asking first** unless they are the single file currently being worked on.
+- **Moonshot API key troubleshooting:** If every endpoint returns 401 even with a fresh key, check: (1) account verification status on platform.moonshot.cn, (2) IP allowlist restrictions, (3) console's built-in test button. The request format itself is correct.
 
 ## Status
 All scaffold items implemented. Pipeline runs end-to-end via `run.py` with checkpoint resume.
