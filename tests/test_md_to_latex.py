@@ -3,7 +3,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-import pytest
 from nodes.md_to_latex import _check_conventions, _split_chunk, MAX_CHUNK_CHARS
 
 
