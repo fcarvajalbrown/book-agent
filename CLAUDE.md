@@ -8,20 +8,22 @@ Pipeline: MD → LaTeX → rasterize SVGs → embed images → apply Lulu templa
 ```
 book-agent/
 ├── draft/
-│   ├── bhc_draft.md           # main manuscript
+│   ├── bhc_draft.md           # main manuscript (~165KB)
 │   ├── bhc_glossary.md        # glossary
 │   └── bhc_references.bib     # BibTeX references
 ├── assets/
-│   ├── images/                # raster images (PNG/JPG, 300 PPI)
-│   └── svg/                   # SVG diagrams (rasterized before LaTeX)
+│   ├── images/                # raster images (fig1-1.png ... fig7-4.png)
+│   └── svg/                   # SVG diagrams (auto-rasterized before LaTeX)
 ├── nodes/
 │   ├── md_to_latex.py         # sub-graph: split → parallel convert → stitch
 │   ├── rasterize_svg.py       # SVG → PNG at 300 PPI (pymupdf)
-│   ├── embed_images.py        # resolve image paths, enforce policy
+│   ├── embed_images.py        # resolve image paths, fuzzy matching, strip unknown
 │   ├── apply_template.py      # inject Lulu geometry into .tex
 │   ├── compile_pdf.py         # runs xelatex, captures errors
 │   ├── validate_pdf.py        # checks fonts embedded, page size, no password
 │   └── human_review.py        # interrupt() gate
+├── memory/                    # persistent checkpointer module
+│   └── __init__.py            # FileSaver — pickles checkpoints to disk
 ├── prompts/
 │   ├── math_rules.md          # inline vs display math conversion rules
 │   └── style_guide.md         # voice rules: dense, no hedging, opinionated
@@ -38,6 +40,11 @@ book-agent/
 ├── tests/
 │   ├── conftest.py            # shared fixtures
 │   ├── test_md_to_latex.py    # convention checks + chunk splitting
+│   ├── test_embed_images.py   # image resolution + fuzzy matching
+│   ├── test_apply_template.py
+│   ├── test_compile_pdf.py
+│   ├── test_rasterize_svg.py
+│   ├── test_validate_pdf.py
 │   ├── test_config.py         # model config loader
 │   └── __init__.py
 ├── state.py                   # TypedDict shared agent state
@@ -56,8 +63,6 @@ md_to_latex (sub-graph) → rasterize_svg → embed_images → apply_template �
 Conditional edges:
 - After `md_to_latex`: skip `rasterize_svg` if `svg_map` is empty
 - After `validate_pdf`: route to `END` if `errors` is non-empty, else `human_review`
-
-`md_to_latex` is a sub-graph: reads the draft, checks heading and spacing conventions, then recursively splits by `##`, `###`, and paragraph breaks until every chunk is under `MAX_CHUNK_CHARS` (10000 chars). Fans out parallel LLM calls per chunk, then stitches results. Convention issues are appended to `errors` and forwarded through the sub-graph.
 
 ## Lulu Constraints (already researched)
 - Page size: trim + 0.125in bleed (e.g. 6×9 → 6.25×9.25in)
@@ -95,5 +100,31 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 - **Moonshot endpoints are not interchangeable:** `api.moonshot.cn` (mainland) and `api.moonshot.ai` (international) each only accept keys minted from their own console. A 401 across every route on a fresh key usually means wrong base URL — swap `.cn`↔`.ai` before chasing account-side issues.
 - **Moonshot model IDs use dots, not dashes:** `kimi-k2.6`, not `kimi-k2-6`. The `kimi-k2.5`/`k2.6` reasoning models force `temperature: 1` and spend output tokens on hidden reasoning. For deterministic MD→LaTeX, use `moonshot-v1-32k` (or `-128k`) which honors `temperature: 0.0`.
 
+## Recent Changes (last session)
+1. **Fixed `INVALID_CONCURRENT_GRAPH_UPDATE`** — sub-graph `fragments` key now uses `Annotated[list[dict], operator.add]` reducer so parallel `convert_chunk` writes concatenate instead of colliding.
+2. **Fixed sub-graph state inheritance** — `SubState` extends `BookState` (TypedDict) instead of `dict`, ensuring parent keys like `draft_path` are preserved when the sub-graph is entered.
+3. **Added node logging** — every node prints `[nodename] message` so pipeline progress and errors are visible in real time, not just as a dumped error list at the end.
+4. **Tightened prompt against invented figures** — system prompt now says "Only use image filenames that appear explicitly in the markdown; do not invent figures."
+5. **Unknown images are stripped** — `embed_images` replaces unresolved `\includegraphics[...]{...}` with a LaTeX comment (`% image not found: ...`) so `xelatex` won't hard-fail on missing files. The error is still tracked in `state["errors"]`.
+6. **Fuzzy image filename matching** — `_core_id()` strips `fig`/`figure` prefixes and non-alphanumeric chars, then matches. Handles `Figure_3_2a` → `fig3-2a.png`, `figure_1_1` → `fig1-1.png`, etc.
+7. **Persistent checkpointer** — replaced in-memory `MemorySaver` with custom `FileSaver` that pickles checkpoints to `memory/checkpoints/state.pkl`. Pipeline resumes after crashes without re-burning LLM tokens. Folder is gitignored.
+
+## Active Bug
+`list index out of range` crashes during `md_to_latex` sub-graph execution. All 36 chunks convert successfully (logs show every "chunk N done"), but the crash occurs before `stitch` completes. Stack trace is swallowed by the broad `except Exception` in `run.py` — check `run.py` line 113 or add `traceback.print_exc()` there to see the real traceback.
+
+Hypotheses:
+- `stitch` tries to access `state.get("fragments", [])` but the list is empty or has an index mismatch
+- Sub-graph `SubState` definition might not be playing well with LangGraph's state filtering
+- One of the parallel `convert_chunk` invocations may be returning malformed data
+
+**To debug:**
+1. Add `import traceback; traceback.print_exc()` inside the `except` block in `run.py`
+2. Or run the sub-graph in isolation:
+```python
+from nodes.md_to_latex import md_to_latex
+result = md_to_latex.invoke({"draft_path": "draft/bhc_draft.md", "errors": []})
+print(len(result.get("fragments", [])))
+```
+
 ## Status
-All scaffold items implemented. Pipeline runs end-to-end via `run.py` with checkpoint resume.
+Pipeline converts draft to LaTeX and writes `outputs/manuscript.tex`. Checkpointer persists state. Next blocker is the `list index out of range` crash in the sub-graph, then installing `xelatex` (MiKTeX/TeX Live) to compile PDF.

@@ -79,8 +79,20 @@ builder.add_edge("rasterize_svg", "embed_images")
 # ... chain all edges
 builder.add_conditional_edges("validate_pdf", has_errors)
 
-graph = builder.compile(checkpointer=MemorySaver())
+graph = builder.compile(checkpointer=FileSaver())
 ```
+
+## Checkpointer: FileSaver (persistent, not in-memory)
+Custom checkpointer at `memory/__init__.py` — subclasses `InMemorySaver` and pickles state to `memory/checkpoints/state.pkl` after every write. On restart, previous state is loaded automatically so the pipeline resumes from the last completed node without re-burning LLM tokens.
+
+```python
+from memory import FileSaver
+
+checkpointer = FileSaver()
+graph = builder.compile(checkpointer=checkpointer)
+```
+
+`memory/checkpoints/` is gitignored.
 
 ## Conditional Edges
 Run a node only if a condition is met.
@@ -112,19 +124,7 @@ from langgraph.types import Command
 graph.invoke(Command(resume="yes"), config={"configurable": {"thread_id": "1"}})
 ```
 
-Requires a checkpointer (e.g. `MemorySaver`) to persist state between interrupts.
-
-## Checkpointer (required for interrupt)
-```python
-from langgraph.checkpoint.memory import MemorySaver
-
-checkpointer = MemorySaver()
-graph = builder.compile(checkpointer=checkpointer)
-
-# Run with thread_id so state is saved
-config = {"configurable": {"thread_id": "book-run-1"}}
-graph.invoke(initial_state, config=config)
-```
+Requires a checkpointer to persist state between interrupts.
 
 ## Running the Graph
 Use `run.py` which handles streaming, checkpoint resume, and human-in-the-loop:
@@ -180,34 +180,38 @@ api_key_env: MOONSHOT_API_KEY
 temperature: 0.0
 ```
 
-```python
-# Sub-graphs: a node can be an entire compiled graph.
-# Used here to chunk a long draft and parallelize LLM calls.
-# load_and_split checks heading conventions then recursively splits
-# by ## -> ### -> paragraph until each chunk fits MAX_CHUNK_CHARS.
+## Sub-graph: md_to_latex (parallel chunk conversion)
+`md_to_latex` is a compiled sub-graph, not a single function. It:
+1. `load_and_split` — reads draft, checks conventions, splits into chunks under `MAX_CHUNK_CHARS`
+2. `convert_chunk` — each chunk gets its own LLM call via `Send()` (parallel)
+3. `stitch` — joins fragments back in order
 
+**Critical: the sub-graph state uses `Annotated` reducers.**
+`fragments` is `Annotated[list[dict], operator.add]` so parallel `convert_chunk` writes are concatenated rather than overwriting each other. Without this, LangGraph throws `INVALID_CONCURRENT_GRAPH_UPDATE`.
+
+The sub-graph state `SubState` extends `BookState` (TypedDict) so parent keys like `draft_path` are not stripped on entry.
+
+```python
+class SubState(BookState):
+    chunks: list[dict]
+    fragments: Annotated[list[dict], operator.add]
+    chunk: dict
+```
+
+```python
 from langgraph.types import Send
 
-def load_and_split(state: dict):
-    # check conventions, then split draft into chunks
-    return {"chunks": [...], "errors": [...]}
-
-def convert_chunk(state: dict):
-    # each chunk gets its own LLM call
-    return {"fragments": [{"index": i, "latex": ...}]}
-
-def stitch(state: dict):
-    # join fragments in original order, forward errors
-    return {"latex_content": stitched, "errors": state.get("errors", [])}
-
-sub_builder = StateGraph(dict)
-sub_builder.add_node("load_and_split", load_and_split)
-sub_builder.add_node("convert_chunk", convert_chunk)
-sub_builder.add_node("stitch", stitch)
-sub_builder.set_entry_point("load_and_split")
-sub_builder.add_conditional_edges("load_and_split", lambda s: [Send("convert_chunk", {"chunk": c}) for c in s.get("chunks", [])])
-sub_builder.add_edge("convert_chunk", "stitch")
-md_to_latex = sub_builder.compile()
+_sub_builder = StateGraph(SubState)
+_sub_builder.add_node("load_and_split", load_and_split)
+_sub_builder.add_node("convert_chunk", convert_chunk)
+_sub_builder.add_node("stitch", stitch)
+_sub_builder.set_entry_point("load_and_split")
+_sub_builder.add_conditional_edges(
+    "load_and_split",
+    lambda s: [Send("convert_chunk", {"chunk": c}) for c in s.get("chunks", [])],
+)
+_sub_builder.add_edge("convert_chunk", "stitch")
+md_to_latex = _sub_builder.compile()
 ```
 
 ## Checkpoint Recovery
@@ -219,3 +223,5 @@ If the pipeline crashes (rate limit, token exhaustion, network error), the check
 for step in graph.stream(initial_state, config=config):
     print(step)
 ```
+
+All nodes print `[nodename] ...` logs so failures are visible in real time.
