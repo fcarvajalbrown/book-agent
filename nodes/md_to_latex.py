@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 from typing import Any
 
-from langchain_core.prompts import ChatPromptTemplate
+from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph
 from langgraph.types import Send
 
@@ -122,14 +122,13 @@ def load_and_split(state: dict[str, Any]) -> dict[str, Any]:
 
 def convert_chunk(state: dict[str, Any]) -> dict[str, Any]:
     chunk = state["chunk"]
-    prompt = ChatPromptTemplate.from_messages([
-        ("system", SYSTEM_PROMPT),
-        ("human", "{markdown}"),
-    ])
+    messages = [
+        SystemMessage(content=SYSTEM_PROMPT),
+        HumanMessage(content=chunk["text"]),
+    ]
     from config import get_llm
     llm = get_llm()
-    chain = prompt | llm
-    response = chain.invoke({"markdown": chunk["text"]})
+    response = llm.invoke(messages)
     return {"fragments": [{"index": chunk["index"], "latex": response.content}]}
 
 
