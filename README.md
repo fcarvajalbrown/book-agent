@@ -118,7 +118,7 @@ Kimi K2.6]
 - `nodes/` — LangGraph node functions
 - `config/` — model config, image policy, run config
 - `templates/` — LaTeX template with Lulu geometry
-- `prompts/` — LLM conversion prompts (math rules, style guide)
+- `prompts/` — LLM conversion prompts (math rules, structure/heading rules, style guide)
 - `outputs/` — generated `.tex` and `.pdf` (gitignored)
 - `tests/` — pytest suite
 - `run.py` — entry point with streaming and checkpoint resume

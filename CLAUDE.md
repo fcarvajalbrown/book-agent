@@ -26,6 +26,7 @@ book-agent/
 │   └── __init__.py            # FileSaver — pickles checkpoints to disk
 ├── prompts/
 │   ├── math_rules.md          # inline vs display math conversion rules
+│   ├── structure_rules.md     # heading map, char escaping, figure [H] placement
 │   └── style_guide.md         # voice rules: dense, no hedging, opinionated
 ├── templates/
 │   └── lulu_interior.tex      # Lulu geometry + font setup
