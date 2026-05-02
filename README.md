@@ -1,5 +1,9 @@
 # book-agent
 
+![Python](https://img.shields.io/badge/python-3.11+-blue.svg?logo=python&logoColor=white)
+![LangGraph](https://img.shields.io/badge/LangGraph-1.1+-green.svg)
+![License](https://img.shields.io/badge/license-MIT-yellow.svg)
+
 LangGraph pipeline that turns a Markdown book draft into a Lulu-compliant PDF.
 
 Pipeline: markdown draft → LaTeX → rasterize SVGs → embed images → apply Lulu template → compile PDF → validate → human review.
