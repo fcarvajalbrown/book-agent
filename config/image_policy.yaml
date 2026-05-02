@@ -1,0 +1,17 @@
+resolution:
+  min_ppi: 300
+  target_ppi: 300
+
+color:
+  preferred: srgb
+  grayscale_gamma: "2.2-2.4"
+
+formats:
+  raster: [png, jpg]
+  vector: [svg]
+
+rules:
+  no_transparency: true
+  no_trim_marks: true
+  embed_fonts: true
+  outline_text: false
