@@ -58,3 +58,5 @@ venv.bak/
 # Project-specific
 config/model_config.yaml
 outputs/
+
+memory/checkpoints/

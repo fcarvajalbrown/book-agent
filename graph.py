@@ -1,6 +1,6 @@
 from langgraph.graph import StateGraph, END
-from langgraph.checkpoint.memory import MemorySaver
 
+from memory import FileSaver
 from state import BookState
 from nodes.md_to_latex import md_to_latex
 from nodes.rasterize_svg import rasterize_svg
@@ -38,5 +38,5 @@ builder.add_edge("compile_pdf", "validate_pdf")
 builder.add_conditional_edges("validate_pdf", has_errors)
 builder.add_edge("human_review", END)
 
-checkpointer = MemorySaver()
+checkpointer = FileSaver()
 graph = builder.compile(checkpointer=checkpointer)
