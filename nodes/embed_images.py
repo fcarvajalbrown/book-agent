@@ -44,9 +44,9 @@ def embed_images(state: BookState) -> BookState:
         resolved = _resolve_image(ref, image_map, svg_map)
         if resolved is None:
             err = f"image not found: {ref}"
-            print(f"  [embed_images] ERROR: {err}")
+            print(f"  [embed_images] ERROR: {err} — stripped from latex")
             errors.append(err)
-            return m.group(0)
+            return f"% {err}"
         image_map[ref] = resolved
         print(f"  [embed_images] resolved {ref} -> {resolved}")
         return f"{prefix}{resolved}{suffix}"

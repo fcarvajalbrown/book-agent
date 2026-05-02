@@ -29,6 +29,7 @@ SYSTEM_PROMPT = (
     "Preserve all inline math $...$ and display math $$...$$ exactly. "
     "Convert markdown tables to tabular environments. "
     "Convert citations like (Author, Year) to \\cite{...} placeholders. "
+    "Only use image filenames that appear explicitly in the markdown; do not invent figures. "
     "Output ONLY the LaTeX body fragment. No preamble, no document environment.\n\n"
     + (MATH_RULES + "\n\n" if MATH_RULES else "")
     + (STYLE_GUIDE if STYLE_GUIDE else "")
