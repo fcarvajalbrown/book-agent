@@ -7,6 +7,12 @@ ASSETS_DIR = Path("assets")
 IMAGE_DIR = ASSETS_DIR / "images"
 
 
+def _core_id(name: str) -> str:
+    # strip fig/figure prefix and all non-alphanumeric, lowercase
+    lower = re.sub(r"[^a-z0-9]", "", name.lower())
+    return re.sub(r"^(figure|fig)", "", lower)
+
+
 def _resolve_image(ref: str, _image_map: dict, svg_map: dict) -> str | None:
     # try direct path first
     candidates = [Path(ref), IMAGE_DIR / ref, ASSETS_DIR / ref]
@@ -21,6 +27,12 @@ def _resolve_image(ref: str, _image_map: dict, svg_map: dict) -> str | None:
     for svg_path, png_path in svg_map.items():
         if Path(svg_path).stem == stem:
             return png_path
+    # fuzzy fallback: figure_1_1 -> fig1-1, etc.
+    ref_core = _core_id(stem)
+    if ref_core:
+        for img in IMAGE_DIR.glob("*"):
+            if _core_id(img.stem) == ref_core:
+                return str(img)
     return None
 
 
