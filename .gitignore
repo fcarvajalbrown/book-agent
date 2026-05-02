@@ -4,3 +4,4 @@ config/model_config.yaml
 outputs/
 __pycache__/
 *.pyc
+*.egg-info/

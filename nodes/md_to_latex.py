@@ -65,8 +65,15 @@ def _split_chunk(text: str, level: int = 2) -> list[str]:
                 current = current + sep + p
         if current:
             out.append(current)
-        if len(out) > 1:
-            return out
+        # recursively split any chunk that still exceeds the budget
+        flat = []
+        for chunk in out:
+            if len(chunk) > MAX_CHUNK_CHARS:
+                flat.extend(_split_chunk(chunk, level + 1))
+            else:
+                flat.append(chunk)
+        if len(flat) > 1:
+            return flat
 
     # hard split at line boundary
     out = []

@@ -128,6 +128,7 @@ langchain-core
 langchain-openai   # or langchain-anthropic — swap freely, graph is agnostic
 cairosvg           # SVG → PNG rasterization
 pyyaml             # config parsing
+pytest             # testing
 ```
 
 ## LLM Calls Inside Nodes

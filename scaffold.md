@@ -30,6 +30,11 @@ book-agent/
 ├── outputs/
 │   ├── manuscript.tex         # generated — gitignore
 │   └── manuscript.pdf         # generated — gitignore
+├── tests/
+│   ├── conftest.py            # shared fixtures
+│   ├── test_md_to_latex.py    # convention checks + chunk splitting
+│   ├── test_config.py         # model config loader
+│   └── __init__.py
 ├── state.py                   # TypedDict shared agent state
 ├── graph.py                   # LangGraph node wiring
 ├── requirements.txt

@@ -16,5 +16,9 @@ dependencies = [
     "cairosvg>=2.7.0",
 ]
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["state", "graph", "nodes*", "config*"]
+
 [project.optional-dependencies]
 openai = ["langchain-openai>=0.2.0"]
