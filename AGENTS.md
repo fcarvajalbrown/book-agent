@@ -102,10 +102,14 @@ def human_review(state: BookState) -> BookState:
     return state
 ```
 
-To resume after interrupt:
+`run.py` handles resume automatically: it detects the saved checkpoint, prompts for approval, and sends `Command(resume="yes")` to continue.
+
+To resume programmatically:
 ```python
-graph.invoke(None, config={"configurable": {"thread_id": "1"}})
+from langgraph.types import Command
+graph.invoke(Command(resume="yes"), config={"configurable": {"thread_id": "1"}})
 ```
+
 Requires a checkpointer (e.g. `MemorySaver`) to persist state between interrupts.
 
 ## Checkpointer (required for interrupt)
@@ -121,6 +125,13 @@ graph.invoke(initial_state, config=config)
 ```
 
 ## Running the Graph
+Use `run.py` which handles streaming, checkpoint resume, and human-in-the-loop:
+
+```bash
+python run.py
+```
+
+For programmatic use:
 ```python
 initial_state: BookState = {
     "draft_path": "draft/bhc_draft.md",
@@ -142,7 +153,7 @@ result = graph.invoke(initial_state, config=config)
 langgraph
 langchain-core
 langchain-openai   # or langchain-anthropic — swap freely, graph is agnostic
-cairosvg           # SVG → PNG rasterization
+pymupdf            # SVG → PNG rasterization, PDF validation
 pyyaml             # config parsing
 pytest             # testing
 ```
@@ -196,6 +207,9 @@ sub_builder.add_conditional_edges("load_and_split", lambda s: [Send("convert_chu
 sub_builder.add_edge("convert_chunk", "stitch")
 md_to_latex = sub_builder.compile()
 ```
+
+## Checkpoint Recovery
+If the pipeline crashes (rate limit, token exhaustion, network error), the checkpoint preserves state. Run again to resume from the last saved node — no work is lost.
 
 ## Debugging
 ```python

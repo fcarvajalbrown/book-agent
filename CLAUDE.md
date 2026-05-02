@@ -15,11 +15,8 @@ book-agent/
 │   ├── images/                # raster images (PNG/JPG, 300 PPI)
 │   └── svg/                   # SVG diagrams (rasterized before LaTeX)
 ├── nodes/
-│   ├── md_to_latex/           # sub-graph: split → parallel convert → stitch
-│   │   ├── __init__.py
-│   │   ├── splitter.py
-│   │   └── sub_graph.py
-│   ├── rasterize_svg.py       # SVG → PNG at 300 PPI (cairosvg or inkscape CLI)
+│   ├── md_to_latex.py         # sub-graph: split → parallel convert → stitch
+│   ├── rasterize_svg.py       # SVG → PNG at 300 PPI (pymupdf)
 │   ├── embed_images.py        # resolve image paths, enforce policy
 │   ├── apply_template.py      # inject Lulu geometry into .tex
 │   ├── compile_pdf.py         # runs xelatex, captures errors
@@ -45,6 +42,8 @@ book-agent/
 │   └── __init__.py
 ├── state.py                   # TypedDict shared agent state
 ├── graph.py                   # LangGraph node wiring
+├── run.py                     # entry point with streaming + checkpoint resume
+├── LEARNING_NOTES.md          # dev session Q&A and architecture notes
 ├── requirements.txt
 └── README.md
 ```
@@ -94,11 +93,5 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 - **Mermaid diagrams go in README.md, not separate files.** GitHub renders them inline.
 - **Do not create folders or files without asking first** unless they are the single file currently being worked on.
 
-## Next Steps (in order)
-1. Write `state.py` — TypedDict with: draft_path, glossary_path, references_path, latex_content, image_map, svg_map, pdf_path, errors, approved
-2. Write `graph.py` — wire nodes + conditional edges
-3. Write `config/model_config.yaml` and `config/__init__.py` — model-agnostic LLM loader
-4. Write each node one by one
-5. Write `prompts/math_rules.md` and `prompts/style_guide.md`
-6. Write `templates/lulu_interior.tex`
-7. Write `config/run_config.yaml` and `config/image_policy.yaml`
+## Status
+All scaffold items implemented. Pipeline runs end-to-end via `run.py` with checkpoint resume.

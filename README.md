@@ -11,7 +11,7 @@ Pipeline: markdown draft → LaTeX → rasterize SVGs → embed images → apply
 ## Setup
 
 ```bash
-pip install -e .
+pip install .
 ```
 
 Set your API key:
@@ -42,29 +42,13 @@ Swap `provider`, `model`, and `base_url` freely. `get_llm()` in `config/__init__
 
 ## Run
 
-```python
-from graph import graph
-from state import BookState
-from langgraph.checkpoint.memory import MemorySaver
-
-checkpointer = MemorySaver()
-app = graph.compile(checkpointer=checkpointer)
-
-initial_state: BookState = {
-    "draft_path": "draft/bhc_draft.md",
-    "glossary_path": "draft/bhc_glossary.md",
-    "references_path": "draft/bhc_references.bib",
-    "latex_content": "",
-    "image_map": {},
-    "svg_map": {},
-    "pdf_path": None,
-    "errors": [],
-    "approved": False,
-}
-
-config = {"configurable": {"thread_id": "book-run-1"}}
-result = app.invoke(initial_state, config=config)
+```bash
+python run.py
 ```
+
+`run.py` streams every node to the terminal, handles checkpoint resume after crashes (rate limits, token exhaustion), and prompts for human approval at the review gate. Run it again to resume from any saved checkpoint.
+
+Set your API key in `config/model_config.yaml` (copied from the example template) before running.
 
 ## Why no `draft/` or `assets/` in the repo?
 
@@ -134,4 +118,8 @@ Kimi K2.6]
 - `nodes/` — LangGraph node functions
 - `config/` — model config, image policy, run config
 - `templates/` — LaTeX template with Lulu geometry
+- `prompts/` — LLM conversion prompts (math rules, style guide)
 - `outputs/` — generated `.tex` and `.pdf` (gitignored)
+- `tests/` — pytest suite
+- `run.py` — entry point with streaming and checkpoint resume
+- `LEARNING_NOTES.md` — dev session Q&A and open questions
