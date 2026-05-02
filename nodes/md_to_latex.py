@@ -118,17 +118,17 @@ def load_and_split(state: dict[str, Any]) -> dict[str, Any]:
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
 
-    errors = list(state.get("errors", []))
+    warnings = list(state.get("warnings", []))
     issues = _check_conventions(text)
     if issues:
         for issue in issues:
-            print(f"  [md_to_latex] convention issue: {issue}")
-        errors.extend(issues)
+            print(f"  [md_to_latex] convention warning: {issue}")
+        warnings.extend(issues)
 
     raw_chunks = _split_chunk(text, level=2)
     chunks = [{"index": i, "text": c} for i, c in enumerate(raw_chunks)]
     print(f"  [md_to_latex] split draft into {len(chunks)} chunk(s)")
-    return {"chunks": chunks, "errors": errors}
+    return {"chunks": chunks, "warnings": warnings}
 
 
 def convert_chunk(state: dict[str, Any]) -> dict[str, Any]:

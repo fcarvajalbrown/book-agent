@@ -49,7 +49,8 @@ class BookState(TypedDict):
     image_map: dict           # {original_path: resolved_path}
     svg_map: dict             # {svg_path: rasterized_png_path}
     pdf_path: Optional[str]
-    errors: list[str]
+    errors: list[str]        # fatal — routes graph to END
+    warnings: list[str]      # non-fatal — surfaced but does not block compile
     approved: bool
 ```
 
@@ -66,7 +67,7 @@ def should_rasterize(state: BookState) -> str:
     return "rasterize_svg" if state["svg_map"] else "embed_images"
 
 def has_errors(state: BookState) -> str:
-    return END if state["errors"] else "human_review"
+    return END if state.get("errors") else "human_review"
 
 builder = StateGraph(BookState)
 builder.add_node("md_to_latex", md_to_latex)
@@ -144,6 +145,7 @@ initial_state: BookState = {
     "svg_map": {},
     "pdf_path": None,
     "errors": [],
+    "warnings": [],
     "approved": False,
 }
 

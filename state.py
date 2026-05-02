@@ -10,4 +10,5 @@ class BookState(TypedDict):
     svg_map: dict
     pdf_path: Optional[str]
     errors: list[str]
+    warnings: list[str]
     approved: bool

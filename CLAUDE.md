@@ -110,21 +110,11 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 7. **Persistent checkpointer** — replaced in-memory `MemorySaver` with custom `FileSaver` that pickles checkpoints to `memory/checkpoints/state.pkl`. Pipeline resumes after crashes without re-burning LLM tokens. Folder is gitignored.
 
 ## Active Bug
-`list index out of range` crashes during `md_to_latex` sub-graph execution. All 36 chunks convert successfully (logs show every "chunk N done"), but the crash occurs before `stitch` completes. Stack trace is swallowed by the broad `except Exception` in `run.py` — check `run.py` line 113 or add `traceback.print_exc()` there to see the real traceback.
-
-Hypotheses:
-- `stitch` tries to access `state.get("fragments", [])` but the list is empty or has an index mismatch
-- Sub-graph `SubState` definition might not be playing well with LangGraph's state filtering
-- One of the parallel `convert_chunk` invocations may be returning malformed data
-
-**To debug:**
-1. Add `import traceback; traceback.print_exc()` inside the `except` block in `run.py`
-2. Or run the sub-graph in isolation:
-```python
-from nodes.md_to_latex import md_to_latex
-result = md_to_latex.invoke({"draft_path": "draft/bhc_draft.md", "errors": []})
-print(len(result.get("fragments", [])))
-```
+None. The previous `list index out of range` crash was resolved by the sub-graph fixes (parallel `fragments` reducer + `SubState(BookState)`). End-to-end run now reaches `compile_pdf` cleanly. `run.py` now prints a real traceback on failure.
 
 ## Status
-Pipeline converts draft to LaTeX and writes `outputs/manuscript.tex`. Checkpointer persists state. Next blocker is the `list index out of range` crash in the sub-graph, then installing `xelatex` (MiKTeX/TeX Live) to compile PDF.
+Pipeline converts draft to LaTeX and writes `outputs/manuscript.tex`. Checkpointer persists state. Current blocker is installing `xelatex` (MiKTeX on Windows: https://miktex.org/download). Once installed, `compile_pdf` → `validate_pdf` → `human_review` should run through.
+
+## State Convention
+- `errors`: fatal failures that should route the graph to `END` (compile failed, pdf missing, validation failed).
+- `warnings`: non-fatal issues that should be surfaced but not block compile (markdown convention issues, stripped image refs). Routing in `has_errors` checks `errors` only.

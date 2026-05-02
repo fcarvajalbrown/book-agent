@@ -16,7 +16,7 @@ def should_rasterize(state: BookState) -> str:
 
 
 def has_errors(state: BookState) -> str:
-    return END if state["errors"] else "human_review"
+    return END if state.get("errors") else "human_review"
 
 
 builder = StateGraph(BookState)

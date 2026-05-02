@@ -44,7 +44,7 @@ def embed_images(state: BookState) -> BookState:
 
     svg_map = state.get("svg_map", {})
     image_map = dict(state.get("image_map", {}))
-    errors = list(state.get("errors", []))
+    warnings = list(state.get("warnings", []))
 
     # match \includegraphics[...]{path} or plain \includegraphics{path}
     pattern = re.compile(r"(\\includegraphics(?:\[.*?\])?\{)([^}]+)(\})")
@@ -55,10 +55,10 @@ def embed_images(state: BookState) -> BookState:
         prefix, ref, suffix = m.group(1), m.group(2), m.group(3)
         resolved = _resolve_image(ref, image_map, svg_map)
         if resolved is None:
-            err = f"image not found: {ref}"
-            print(f"  [embed_images] ERROR: {err} — stripped from latex")
-            errors.append(err)
-            return f"% {err}"
+            warn = f"image not found: {ref}"
+            print(f"  [embed_images] WARN: {warn} — stripped from latex")
+            warnings.append(warn)
+            return f"% {warn}"
         image_map[ref] = resolved
         print(f"  [embed_images] resolved {ref} -> {resolved}")
         return f"{prefix}{resolved}{suffix}"
@@ -67,5 +67,5 @@ def embed_images(state: BookState) -> BookState:
 
     state["latex_content"] = new_latex
     state["image_map"] = image_map
-    state["errors"] = errors
+    state["warnings"] = warnings
     return state

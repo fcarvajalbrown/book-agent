@@ -1,4 +1,5 @@
 import sys
+import traceback
 from pathlib import Path
 
 from langgraph.types import Command
@@ -60,6 +61,7 @@ def main() -> None:
             "svg_map": {},
             "pdf_path": None,
             "errors": [],
+            "warnings": [],
             "approved": False,
         }
 
@@ -112,6 +114,10 @@ def main() -> None:
 
     except Exception as exc:  # pylint: disable=broad-exception-caught
         print(f"\n[!] PIPELINE FAILED: {exc}")
+        print("-" * 60)
+        traceback.print_exc()
+        print("-" * 60)
+        print(f"last node before crash: {last_node}")
         print("=" * 60)
         print("The pipeline state has been saved.")
         print("Fix the issue (e.g. add tokens, check network) then run again.")
