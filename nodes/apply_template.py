@@ -12,12 +12,16 @@ def apply_template(state: BookState) -> BookState:
     errors = list(state.get("errors", []))
 
     if not latex:
-        errors.append("no latex content to inject")
+        err = "no latex content to inject"
+        print(f"  [apply_template] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
     if not TEMPLATE_PATH.exists():
-        errors.append(f"template not found: {TEMPLATE_PATH}")
+        err = f"template not found: {TEMPLATE_PATH}"
+        print(f"  [apply_template] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
@@ -25,7 +29,9 @@ def apply_template(state: BookState) -> BookState:
         template = f.read()
 
     if BODY_MARKER not in template:
-        errors.append(f"template missing body marker: {BODY_MARKER}")
+        err = f"template missing body marker: {BODY_MARKER}"
+        print(f"  [apply_template] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
@@ -35,6 +41,7 @@ def apply_template(state: BookState) -> BookState:
     with open(OUTPUT_PATH, "w", encoding="utf-8") as f:
         f.write(document)
 
+    print(f"  [apply_template] wrote {OUTPUT_PATH} ({len(document)} chars)")
     state["pdf_path"] = str(OUTPUT_PATH.with_suffix(".pdf"))
     state["errors"] = errors
     return state

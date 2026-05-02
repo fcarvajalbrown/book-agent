@@ -11,11 +11,14 @@ def compile_pdf(state: BookState) -> BookState:
     errors = list(state.get("errors", []))
 
     if not OUTPUT_TEX.exists():
-        errors.append(f"tex file not found: {OUTPUT_TEX}")
+        err = f"tex file not found: {OUTPUT_TEX}"
+        print(f"  [compile_pdf] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
     try:
+        print(f"  [compile_pdf] running xelatex on {OUTPUT_TEX} ...")
         # two-pass for cross-references and toc
         for _ in range(2):
             result = subprocess.run(
@@ -26,7 +29,9 @@ def compile_pdf(state: BookState) -> BookState:
                 check=False,
             )
     except FileNotFoundError:
-        errors.append("xelatex not found — install texlive or miktex")
+        err = "xelatex not found — install texlive or miktex"
+        print(f"  [compile_pdf] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
@@ -35,7 +40,11 @@ def compile_pdf(state: BookState) -> BookState:
         lines = result.stdout.splitlines()
         fatal = [l for l in lines if "!" in l]
         summary = fatal[-1] if fatal else result.stdout[-500:]
-        errors.append(f"xelatex failed: {summary}")
+        err = f"xelatex failed: {summary}"
+        print(f"  [compile_pdf] ERROR: {err}")
+        errors.append(err)
+    else:
+        print(f"  [compile_pdf] xelatex finished successfully")
 
     pdf_path = OUTPUT_TEX.with_suffix(".pdf")
     state["pdf_path"] = str(pdf_path) if pdf_path.exists() else None

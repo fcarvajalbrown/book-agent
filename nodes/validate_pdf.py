@@ -15,37 +15,51 @@ def validate_pdf(state: BookState) -> BookState:
     errors = list(state.get("errors", []))
 
     if not pdf_path or not Path(pdf_path).exists():
-        errors.append(f"pdf not found: {pdf_path}")
+        err = f"pdf not found: {pdf_path}"
+        print(f"  [validate_pdf] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
     try:
         reader = PdfReader(pdf_path)
     except (OSError, ValueError) as exc:
-        errors.append(f"cannot read pdf: {exc}")
+        err = f"cannot read pdf: {exc}"
+        print(f"  [validate_pdf] ERROR: {err}")
+        errors.append(err)
         state["errors"] = errors
         return state
 
+    print(f"  [validate_pdf] {pdf_path} — {len(reader.pages)} page(s)")
+
     if reader.is_encrypted:
-        errors.append("pdf is password protected")
+        err = "pdf is password protected"
+        print(f"  [validate_pdf] ERROR: {err}")
+        errors.append(err)
 
     if len(reader.pages) == 0:
-        errors.append("pdf has no pages")
+        err = "pdf has no pages"
+        print(f"  [validate_pdf] ERROR: {err}")
+        errors.append(err)
 
     for i, page in enumerate(reader.pages):
         w = float(page.mediabox.width)
         h = float(page.mediabox.height)
         if abs(w - EXPECTED_WIDTH_PT) > TOLERANCE_PT or abs(h - EXPECTED_HEIGHT_PT) > TOLERANCE_PT:
-            errors.append(
+            err = (
                 f"page {i+1} size {w:.1f}x{h:.1f}pt does not match expected "
                 f"{EXPECTED_WIDTH_PT:.1f}x{EXPECTED_HEIGHT_PT:.1f}pt"
             )
+            print(f"  [validate_pdf] ERROR: {err}")
+            errors.append(err)
 
         # basic font check: every page should reference at least one font in resources
         resources = page.get("/Resources", {})
         fonts = resources.get("/Font", {})
         if not fonts:
-            errors.append(f"page {i+1} has no embedded fonts")
+            err = f"page {i+1} has no embedded fonts"
+            print(f"  [validate_pdf] ERROR: {err}")
+            errors.append(err)
 
     state["errors"] = errors
     return state

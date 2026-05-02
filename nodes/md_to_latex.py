@@ -1,11 +1,14 @@
 import os
 import re
 from pathlib import Path
-from typing import Any
+import operator
+from typing import Any, Annotated
 
 from langchain_core.messages import SystemMessage, HumanMessage
 from langgraph.graph import StateGraph
 from langgraph.types import Send
+
+from state import BookState
 
 MAX_CHUNK_CHARS = 10000
 PROMPTS_DIR = Path("prompts")
@@ -104,24 +107,32 @@ def _split_chunk(text: str, level: int = 2) -> list[str]:
 def load_and_split(state: dict[str, Any]) -> dict[str, Any]:
     path = state.get("draft_path", "")
     if not os.path.exists(path):
+        err = f"draft not found: {path}"
+        print(f"  [md_to_latex] {err}")
         return {
             "chunks": [],
-            "errors": state.get("errors", []) + [f"draft not found: {path}"],
+            "errors": state.get("errors", []) + [err],
         }
 
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
 
     errors = list(state.get("errors", []))
-    errors.extend(_check_conventions(text))
+    issues = _check_conventions(text)
+    if issues:
+        for issue in issues:
+            print(f"  [md_to_latex] convention issue: {issue}")
+        errors.extend(issues)
 
     raw_chunks = _split_chunk(text, level=2)
     chunks = [{"index": i, "text": c} for i, c in enumerate(raw_chunks)]
+    print(f"  [md_to_latex] split draft into {len(chunks)} chunk(s)")
     return {"chunks": chunks, "errors": errors}
 
 
 def convert_chunk(state: dict[str, Any]) -> dict[str, Any]:
     chunk = state["chunk"]
+    print(f"  [md_to_latex] converting chunk {chunk['index']} ({len(chunk['text'])} chars)")
     messages = [
         SystemMessage(content=SYSTEM_PROMPT),
         HumanMessage(content=chunk["text"]),
@@ -129,16 +140,24 @@ def convert_chunk(state: dict[str, Any]) -> dict[str, Any]:
     from config import get_llm
     llm = get_llm()
     response = llm.invoke(messages)
+    print(f"  [md_to_latex] chunk {chunk['index']} done ({len(response.content)} chars latex)")
     return {"fragments": [{"index": chunk["index"], "latex": response.content}]}
 
 
-def stitch(state: dict[str, Any]) -> dict[str, Any]:
+class SubState(BookState):
+    chunks: list[dict]
+    fragments: Annotated[list[dict], operator.add]
+    chunk: dict
+
+
+def stitch(state: SubState) -> dict[str, Any]:
     fragments = sorted(state.get("fragments", []), key=lambda x: x["index"])
     latex = "\n\n".join(f["latex"] for f in fragments)
+    print(f"  [md_to_latex] stitched {len(fragments)} fragment(s) into {len(latex)} chars of latex")
     return {"latex_content": latex, "errors": state.get("errors", [])}
 
 
-_sub_builder = StateGraph(dict)
+_sub_builder = StateGraph(SubState)
 _sub_builder.add_node("load_and_split", load_and_split)
 _sub_builder.add_node("convert_chunk", convert_chunk)
 _sub_builder.add_node("stitch", stitch)

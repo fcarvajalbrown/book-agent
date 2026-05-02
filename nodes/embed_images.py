@@ -27,6 +27,7 @@ def _resolve_image(ref: str, _image_map: dict, svg_map: dict) -> str | None:
 def embed_images(state: BookState) -> BookState:
     latex = state.get("latex_content", "")
     if not latex:
+        print("  [embed_images] no latex content, skipping")
         return state
 
     svg_map = state.get("svg_map", {})
@@ -35,14 +36,19 @@ def embed_images(state: BookState) -> BookState:
 
     # match \includegraphics[...]{path} or plain \includegraphics{path}
     pattern = re.compile(r"(\\includegraphics(?:\[.*?\])?\{)([^}]+)(\})")
+    found = pattern.findall(latex)
+    print(f"  [embed_images] found {len(found)} image reference(s)")
 
     def replacer(m: re.Match) -> str:
         prefix, ref, suffix = m.group(1), m.group(2), m.group(3)
         resolved = _resolve_image(ref, image_map, svg_map)
         if resolved is None:
-            errors.append(f"image not found: {ref}")
+            err = f"image not found: {ref}"
+            print(f"  [embed_images] ERROR: {err}")
+            errors.append(err)
             return m.group(0)
         image_map[ref] = resolved
+        print(f"  [embed_images] resolved {ref} -> {resolved}")
         return f"{prefix}{resolved}{suffix}"
 
     new_latex = pattern.sub(replacer, latex)
