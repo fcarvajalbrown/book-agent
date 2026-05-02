@@ -16,7 +16,9 @@ def get_llm() -> BaseChatModel:
     provider = cfg.get("provider", "openai")
     model = cfg.get("model", "gpt-4o-mini")
     temperature = cfg.get("temperature", 0.0)
-    api_key = os.environ.get(cfg.get("api_key_env", "OPENAI_API_KEY"), "")
+    api_key = cfg.get("api_key", "")
+    if not api_key:
+        api_key = os.environ.get(cfg.get("api_key_env", "OPENAI_API_KEY"), "")
     base_url = cfg.get("base_url")
 
     if provider == "openai":
