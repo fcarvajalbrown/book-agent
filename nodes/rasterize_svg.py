@@ -1,31 +1,12 @@
-import subprocess
 from pathlib import Path
+
+import pymupdf
 
 from state import BookState
 
 SVG_DIR = Path("assets/svg")
 IMAGE_DIR = Path("assets/images")
 DPI = 300
-
-
-def _try_cairosvg(svg_path: Path, png_path: Path) -> None:
-    import cairosvg
-    with open(svg_path, "rb") as f:
-        cairosvg.svg2png(file_obj=f, write_to=str(png_path), dpi=DPI)
-
-
-def _try_inkscape(svg_path: Path, png_path: Path) -> None:
-    subprocess.run(
-        [
-            "inkscape",
-            str(svg_path),
-            "--export-type=png",
-            f"--export-filename={png_path}",
-            f"--export-dpi={DPI}",
-        ],
-        check=True,
-        capture_output=True,
-    )
 
 
 def rasterize_svg(state: BookState) -> BookState:
@@ -48,15 +29,14 @@ def rasterize_svg(state: BookState) -> BookState:
             continue
 
         try:
-            _try_cairosvg(svg, png)
-        except (OSError, ImportError) as cairo_err:
-            try:
-                _try_inkscape(svg, png)
-            except (FileNotFoundError, subprocess.CalledProcessError) as ink_err:
-                errors.append(
-                    f"rasterize {svg.name}: cairo={cairo_err}; inkscape={ink_err}"
-                )
-                continue
+            doc = pymupdf.open(str(svg))
+            page = doc[0]
+            pix = page.get_pixmap(dpi=DPI)
+            pix.save(str(png))
+            doc.close()
+        except (RuntimeError, OSError) as exc:
+            errors.append(f"rasterize {svg.name}: {exc}")
+            continue
 
         svg_map[str(svg)] = str(png)
 

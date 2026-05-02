@@ -1,5 +1,6 @@
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 from langchain_core.prompts import ChatPromptTemplate
@@ -7,13 +8,27 @@ from langgraph.graph import StateGraph
 from langgraph.types import Send
 
 MAX_CHUNK_CHARS = 10000
+PROMPTS_DIR = Path("prompts")
+
+
+def _load_prompt(name: str) -> str:
+    path = PROMPTS_DIR / name
+    if path.exists():
+        return path.read_text(encoding="utf-8")
+    return ""
+
+
+MATH_RULES = _load_prompt("math_rules.md")
+STYLE_GUIDE = _load_prompt("style_guide.md")
 
 SYSTEM_PROMPT = (
     "Convert the provided markdown to a LaTeX fragment. "
     "Preserve all inline math $...$ and display math $$...$$ exactly. "
     "Convert markdown tables to tabular environments. "
     "Convert citations like (Author, Year) to \\cite{...} placeholders. "
-    "Output ONLY the LaTeX body fragment. No preamble, no document environment."
+    "Output ONLY the LaTeX body fragment. No preamble, no document environment.\n\n"
+    + (MATH_RULES + "\n\n" if MATH_RULES else "")
+    + (STYLE_GUIDE if STYLE_GUIDE else "")
 )
 
 
@@ -36,7 +51,7 @@ def _check_conventions(text: str) -> list[str]:
 
 def _split_by_headings(text: str, level: int) -> list[str]:
     pattern = re.escape("#" * level)
-    parts = re.split(rf"(?=^{pattern}\\s)", text, flags=re.MULTILINE)
+    parts = re.split(rf"(?=^{pattern}\s)", text, flags=re.MULTILINE)
     return [p.strip() for p in parts if p.strip()]
 
 
@@ -52,7 +67,6 @@ def _split_chunk(text: str, level: int = 2) -> list[str]:
                 out.extend(_split_chunk(p, level + 1))
             return out
 
-    # paragraph split with budget
     paras = [p.strip() for p in text.split("\n\n") if p.strip()]
     if len(paras) > 1:
         out, current = [], ""
@@ -65,7 +79,6 @@ def _split_chunk(text: str, level: int = 2) -> list[str]:
                 current = current + sep + p
         if current:
             out.append(current)
-        # recursively split any chunk that still exceeds the budget
         flat = []
         for chunk in out:
             if len(chunk) > MAX_CHUNK_CHARS:
@@ -75,7 +88,6 @@ def _split_chunk(text: str, level: int = 2) -> list[str]:
         if len(flat) > 1:
             return flat
 
-    # hard split at line boundary
     out = []
     while text:
         if len(text) <= MAX_CHUNK_CHARS:

@@ -8,8 +8,6 @@ from state import BookState
 
 
 def test_rasterize_maps_existing_pngs():
-    # if assets/svg/ has svgs and assets/images/ has matching pngs,
-    # the node should populate svg_map without errors
     state: BookState = {
         "draft_path": "",
         "glossary_path": "",
@@ -22,9 +20,7 @@ def test_rasterize_maps_existing_pngs():
         "approved": False,
     }
     result = rasterize_svg(state)
-    # no errors expected because cached pngs exist
     assert result["errors"] == []
-    # svg_map should be populated if svgs are present
     if any(Path("assets/svg").glob("*.svg")):
         assert len(result["svg_map"]) > 0
     else:
