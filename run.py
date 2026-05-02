@@ -29,15 +29,28 @@ def main() -> None:
     thread_id = "book-run-1"
     config = {"configurable": {"thread_id": thread_id}}
 
-    # check if we are resuming from an interrupt
-    state_snapshot = graph.get_state(config)
-    if state_snapshot and state_snapshot.next:
-        # graph is paused at an interrupt
-        response = _prompt_approval()
-        print(f"\nresuming with: {response}")
-        stream_input = Command(resume=response)
+    snapshot = graph.get_state(config)
+    stream_input = None
+    is_resume = False
+
+    if snapshot and snapshot.next:
+        is_resume = True
+        next_nodes = snapshot.next
+
+        if next_nodes == ("human_review",):
+            response = _prompt_approval()
+            print(f"\nresuming human_review with: {response}")
+            stream_input = Command(resume=response)
+        else:
+            print("=" * 60)
+            print("book-agent resuming from checkpoint")
+            print(f"next nodes: {next_nodes}")
+            print("=" * 60)
+            stream_input = None
     else:
-        # fresh run
+        print("=" * 60)
+        print("book-agent pipeline starting")
+        print("=" * 60)
         stream_input = {
             "draft_path": "draft/bhc_draft.md",
             "glossary_path": "draft/bhc_glossary.md",
@@ -49,9 +62,6 @@ def main() -> None:
             "errors": [],
             "approved": False,
         }
-        print("=" * 60)
-        print("book-agent pipeline starting")
-        print("=" * 60)
 
     last_node = None
     try:
@@ -100,20 +110,30 @@ def main() -> None:
                 elif node_name == "human_review":
                     print(f"    approved: {node_state.get('approved')}")
 
-    except KeyboardInterrupt:
-        print("\n\n[!] Interrupted by user.")
-        sys.exit(130)
+    except Exception as exc:  # pylint: disable=broad-exception-caught
+        print(f"\n[!] PIPELINE FAILED: {exc}")
+        print("=" * 60)
+        print("The pipeline state has been saved.")
+        print("Fix the issue (e.g. add tokens, check network) then run again.")
+        print("    python run.py")
+        print("=" * 60)
+        sys.exit(1)
 
-    # if we ended at human_review without resuming, the interrupt is active
+    # check if we ended at a fresh human_review interrupt
     snapshot = graph.get_state(config)
     if snapshot and snapshot.next and last_node == "human_review":
         print("\n[!] Pipeline paused for human review.")
         print("    Run this script again to resume and provide approval.")
         sys.exit(0)
 
-    print("\n" + "=" * 60)
-    print("pipeline complete")
-    print("=" * 60)
+    if is_resume and not (snapshot and snapshot.next):
+        print("\n" + "=" * 60)
+        print("pipeline resumed and completed")
+        print("=" * 60)
+    else:
+        print("\n" + "=" * 60)
+        print("pipeline complete")
+        print("=" * 60)
 
 
 if __name__ == "__main__":
