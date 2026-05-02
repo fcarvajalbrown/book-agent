@@ -23,17 +23,39 @@ def _load_prompt(name: str) -> str:
 
 MATH_RULES = _load_prompt("math_rules.md")
 STYLE_GUIDE = _load_prompt("style_guide.md")
+STRUCTURE_RULES = _load_prompt("structure_rules.md")
 
 SYSTEM_PROMPT = (
-    "Convert the provided markdown to a LaTeX fragment. "
+    "Convert the provided markdown to a LaTeX fragment for a `book` class document. "
     "Preserve all inline math $...$ and display math $$...$$ exactly. "
     "Convert markdown tables to tabular environments. "
     "Convert citations like (Author, Year) to \\cite{...} placeholders. "
     "Only use image filenames that appear explicitly in the markdown; do not invent figures. "
     "Output ONLY the LaTeX body fragment. No preamble, no document environment.\n\n"
+    + (STRUCTURE_RULES + "\n\n" if STRUCTURE_RULES else "")
     + (MATH_RULES + "\n\n" if MATH_RULES else "")
     + (STYLE_GUIDE if STYLE_GUIDE else "")
 )
+
+
+FIGURE_MARKER_RE = re.compile(
+    r"\*?\[Figure\s+(\d+)[\.\-_](\d+)([a-z]?)\s*[—\-–:]\s*([^\]]+?)\]\*?",
+    flags=re.IGNORECASE,
+)
+
+
+def _normalize_figure_refs(text: str) -> tuple[str, int]:
+    # rewrite *[Figure 1.1 — caption]* style markers into proper ![caption](fig1-1.png)
+    count = 0
+
+    def repl(m: re.Match) -> str:
+        nonlocal count
+        chap, sec, letter, caption = m.group(1), m.group(2), m.group(3), m.group(4).strip()
+        count += 1
+        # the LLM still escapes inside the caption; that's its job
+        return f"![{caption}](fig{chap}-{sec}{letter}.png)"
+
+    return FIGURE_MARKER_RE.sub(repl, text), count
 
 
 def _check_conventions(text: str) -> list[str]:
@@ -117,6 +139,10 @@ def load_and_split(state: dict[str, Any]) -> dict[str, Any]:
 
     with open(path, "r", encoding="utf-8") as f:
         text = f.read()
+
+    text, fig_count = _normalize_figure_refs(text)
+    if fig_count:
+        print(f"  [md_to_latex] normalized {fig_count} figure marker(s) into ![](fig...) refs")
 
     warnings = list(state.get("warnings", []))
     issues = _check_conventions(text)
