@@ -20,7 +20,8 @@
 - Any file that may contain secrets must be gitignored, with an `_example` version committed in its place.
 - Mermaid diagrams belong in README.md. Do not create separate `.mmd` files.
 - The user is a senior developer who prefers root-cause fixes and dense, direct communication.
-- Moonshot API keys can return 401 for account-side reasons (unverified account, IP restrictions, disabled key) even when the request format is correct. Always verify with a raw HTTP test before blaming the code.
+- Moonshot has two endpoints: `api.moonshot.cn` (mainland China) and `api.moonshot.ai` (international). A given key only works on one of them — keys minted from the international console return 401 on the `.cn` endpoint and vice versa. If a fresh key returns 401 everywhere, swap the base URL before chasing account-side issues.
+- Moonshot model IDs use dots, not dashes (`kimi-k2.6`, not `kimi-k2-6`). The `kimi-k2.5`/`k2.6` reasoning models force `temperature: 1` and burn output budget on hidden reasoning tokens — for deterministic transformation tasks like MD→LaTeX, prefer `moonshot-v1-32k` or `moonshot-v1-128k`.
 
 ## Core Mental Model
 Every node is a Python function: takes `state`, returns updated `state`.
@@ -173,8 +174,8 @@ Copy `config/model_config_example.yaml` to `config/model_config.yaml` (gitignore
 
 ```yaml
 provider: openai
-model: kimi-k2-6
-base_url: https://api.moonshot.cn/v1
+model: moonshot-v1-32k
+base_url: https://api.moonshot.ai/v1
 api_key_env: MOONSHOT_API_KEY
 temperature: 0.0
 ```

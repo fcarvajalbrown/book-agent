@@ -92,7 +92,8 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 - **Secrets go in gitignored files with `_example` templates committed.** (`model_config.yaml`, `.env`)
 - **Mermaid diagrams go in README.md, not separate files.** GitHub renders them inline.
 - **Do not create folders or files without asking first** unless they are the single file currently being worked on.
-- **Moonshot API key troubleshooting:** If every endpoint returns 401 even with a fresh key, check: (1) account verification status on platform.moonshot.cn, (2) IP allowlist restrictions, (3) console's built-in test button. The request format itself is correct.
+- **Moonshot endpoints are not interchangeable:** `api.moonshot.cn` (mainland) and `api.moonshot.ai` (international) each only accept keys minted from their own console. A 401 across every route on a fresh key usually means wrong base URL — swap `.cn`↔`.ai` before chasing account-side issues.
+- **Moonshot model IDs use dots, not dashes:** `kimi-k2.6`, not `kimi-k2-6`. The `kimi-k2.5`/`k2.6` reasoning models force `temperature: 1` and spend output tokens on hidden reasoning. For deterministic MD→LaTeX, use `moonshot-v1-32k` (or `-128k`) which honors `temperature: 0.0`.
 
 ## Status
 All scaffold items implemented. Pipeline runs end-to-end via `run.py` with checkpoint resume.
