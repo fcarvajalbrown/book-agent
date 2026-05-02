@@ -62,10 +62,71 @@ config = {"configurable": {"thread_id": "book-run-1"}}
 result = app.invoke(initial_state, config=config)
 ```
 
+## Why no `draft/` or `assets/` in the repo?
+
+Both directories are gitignored because they contain per-book content that does not belong in version control. Create them locally:
+
+```bash
+mkdir draft assets assets/images assets/svg
+
+# example draft structure
+cat > draft/bhc_draft.md << 'EOF'
+# Your Book Title
+
+## Chapter 1
+
+Your content here.
+EOF
+
+cp your_figure.png assets/images/fig1-1.png
+cp your_diagram.svg assets/svg/fig1-1.svg
+```
+
+## Architecture
+
+```mermaid
+flowchart TD
+    subgraph External
+        LLM[Moonshot API
+Kimi K2.6]
+        Lulu[Lulu Print-on-Demand]
+    end
+
+    subgraph "book-agent Pipeline"
+        direction LR
+        S1[md_to_latex] --> S2{rasterize?}
+        S2 -->|yes| S3[rasterize_svg]
+        S2 -->|no| S4[embed_images]
+        S3 --> S4
+        S4 --> S5[apply_template]
+        S5 --> S6[compile_pdf]
+        S6 --> S7[validate_pdf]
+        S7 --> S8{errors?}
+        S8 -->|yes| END[END]
+        S8 -->|no| S9[human_review]
+        S9 --> END
+    end
+
+    subgraph "md_to_latex Sub-graph"
+        direction TB
+        SS1[load_and_split] -->|Send| SS2[convert_chunk]
+        SS2 --> SS3[stitch]
+    end
+
+    Draft[(draft/bhc_draft.md)] --> S1
+    S1 -.-> SS1
+    SS2 -.->|HTTP| LLM
+    S5 --> Template[(templates/lulu_interior.tex)]
+    S6 --> Tex[(outputs/manuscript.tex)]
+    S7 --> PDF[(outputs/manuscript.pdf)]
+    S9 -.->|interrupt| Author([Human Author])
+    PDF -.-> Lulu
+```
+
 ## Structure
 
-- `draft/` — source manuscript, glossary, BibTeX references
-- `assets/` — raster images and SVG diagrams
+- `draft/` — source manuscript, glossary, BibTeX references (gitignored, create locally)
+- `assets/` — raster images and SVG diagrams (gitignored, create locally)
 - `nodes/` — LangGraph node functions
 - `config/` — model config, image policy, run config
 - `templates/` — LaTeX template with Lulu geometry

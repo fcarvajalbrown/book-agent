@@ -54,6 +54,10 @@ book-agent/
 md_to_latex (sub-graph) → rasterize_svg → embed_images → apply_template → compile_pdf → validate_pdf → human_review
 ```
 
+Conditional edges:
+- After `md_to_latex`: skip `rasterize_svg` if `svg_map` is empty
+- After `validate_pdf`: route to `END` if `errors` is non-empty, else `human_review`
+
 `md_to_latex` is a sub-graph: reads the draft, checks heading and spacing conventions, then recursively splits by `##`, `###`, and paragraph breaks until every chunk is under `MAX_CHUNK_CHARS` (10000 chars). Fans out parallel LLM calls per chunk, then stitches results. Convention issues are appended to `errors` and forwarded through the sub-graph.
 
 ## Lulu Constraints (already researched)
@@ -78,6 +82,17 @@ Style: Stripe blog + Dijkstra essay — dense, direct, opinionated. No hedging.
 ## Workflow Rules
 - Work file by file in dependency order.
 - After each file: give a one-line summary of what was done, then wait for an explicit "go" before writing the next file.
+- **Commit and push before asking for the next go.** Do not accumulate changes across multiple files without committing.
+- Do not batch-write stubs. One node = one turn = one commit.
+
+## Lessons Learned (read before acting)
+- **Never assume the LLM provider.** Ask. Felipe uses Moonshot/Kimi K2.6, not OpenAI.
+- **Never hardcode models.** Always route through `config/get_llm()`.
+- **Use `pip install .` (non-editable), never `pip install -e .`.** Felipe refuses `.egg-info/` folders in the project root.
+- **Use GitHub's official Python .gitignore.** Do not hand-roll minimal ones.
+- **Secrets go in gitignored files with `_example` templates committed.** (`model_config.yaml`, `.env`)
+- **Mermaid diagrams go in README.md, not separate files.** GitHub renders them inline.
+- **Do not create folders or files without asking first** unless they are the single file currently being worked on.
 
 ## Next Steps (in order)
 1. Write `state.py` — TypedDict with: draft_path, glossary_path, references_path, latex_content, image_map, svg_map, pdf_path, errors, approved

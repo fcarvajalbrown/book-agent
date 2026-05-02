@@ -10,6 +10,16 @@
 ## Workflow Rules
 - Work file by file in dependency order.
 - After each file: give a one-line summary of what was done, then wait for an explicit "go" before writing the next file.
+- **Commit and push before asking for the next go.** The user expects a clean checkpoint after every file.
+- Do not batch-write multiple stubs in one turn.
+
+## Lessons Learned for Future Agents
+- Ask which LLM provider the user is using. Do not default to OpenAI.
+- Install with `pip install .`, never `pip install -e .` — the user will not tolerate `.egg-info/` in the repo.
+- Use the standard GitHub Python .gitignore template. Know it by heart or fetch it.
+- Any file that may contain secrets must be gitignored, with an `_example` version committed in its place.
+- Mermaid diagrams belong in README.md. Do not create separate `.mmd` files.
+- The user is a senior developer who prefers root-cause fixes and dense, direct communication.
 
 ## Core Mental Model
 Every node is a Python function: takes `state`, returns updated `state`.
@@ -42,26 +52,32 @@ class BookState(TypedDict):
 ```
 
 ## Graph (graph.py)
-Wires nodes together. Supports conditional edges (e.g. skip a node if no errors).
+Wires nodes together. Supports conditional edges (skip rasterize if no SVGs, skip human review on validation errors).
 
 ```python
-from langgraph.graph import StateGraph
+from langgraph.graph import StateGraph, END
 from state import BookState
 from nodes.md_to_latex import md_to_latex
 # ... other imports
 
-builder = StateGraph(BookState)
+def should_rasterize(state: BookState) -> str:
+    return "rasterize_svg" if state["svg_map"] else "embed_images"
 
+def has_errors(state: BookState) -> str:
+    return END if state["errors"] else "human_review"
+
+builder = StateGraph(BookState)
 builder.add_node("md_to_latex", md_to_latex)
 builder.add_node("rasterize_svg", rasterize_svg)
 # ... add all nodes
 
 builder.set_entry_point("md_to_latex")
-builder.add_edge("md_to_latex", "rasterize_svg")
+builder.add_conditional_edges("md_to_latex", should_rasterize)
 builder.add_edge("rasterize_svg", "embed_images")
 # ... chain all edges
+builder.add_conditional_edges("validate_pdf", has_errors)
 
-graph = builder.compile()
+graph = builder.compile(checkpointer=MemorySaver())
 ```
 
 ## Conditional Edges
