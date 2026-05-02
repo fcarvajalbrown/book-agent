@@ -44,7 +44,7 @@ def compile_pdf(state: BookState) -> BookState:
         print(f"  [compile_pdf] ERROR: {err}")
         errors.append(err)
     else:
-        print(f"  [compile_pdf] xelatex finished successfully")
+        print("  [compile_pdf] xelatex finished successfully")
 
     pdf_path = OUTPUT_TEX.with_suffix(".pdf")
     state["pdf_path"] = str(pdf_path) if pdf_path.exists() else None

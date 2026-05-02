@@ -20,7 +20,7 @@ def _font_is_embedded(font_obj) -> bool:
                 desc = d.get_object().get("/FontDescriptor")
                 if desc and any(k in desc.get_object() for k in ("/FontFile", "/FontFile2", "/FontFile3")):
                     return True
-            except Exception:
+            except (KeyError, AttributeError):
                 continue
         return False
     desc = font_obj.get("/FontDescriptor")
@@ -97,7 +97,7 @@ def validate_pdf(state: BookState) -> BookState:
                 if base in seen_fonts:
                     continue
                 seen_fonts[base] = _font_is_embedded(fobj)
-            except Exception as exc:
+            except (KeyError, AttributeError) as exc:
                 warnings.append(f"could not inspect font: {exc}")
 
     not_embedded = [name for name, ok in seen_fonts.items() if not ok]
