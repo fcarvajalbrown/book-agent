@@ -21,7 +21,7 @@ def validate_pdf(state: BookState) -> BookState:
 
     try:
         reader = PdfReader(pdf_path)
-    except Exception as exc:
+    except (OSError, ValueError) as exc:
         errors.append(f"cannot read pdf: {exc}")
         state["errors"] = errors
         return state

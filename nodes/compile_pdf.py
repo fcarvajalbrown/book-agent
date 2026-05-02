@@ -23,6 +23,7 @@ def compile_pdf(state: BookState) -> BookState:
                 cwd=str(OUTPUT_DIR),
                 capture_output=True,
                 text=True,
+                check=False,
             )
     except FileNotFoundError:
         errors.append("xelatex not found — install texlive or miktex")

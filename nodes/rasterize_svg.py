@@ -1,4 +1,3 @@
-import os
 import subprocess
 from pathlib import Path
 
@@ -50,10 +49,10 @@ def rasterize_svg(state: BookState) -> BookState:
 
         try:
             _try_cairosvg(svg, png)
-        except Exception as cairo_err:
+        except (OSError, ImportError) as cairo_err:
             try:
                 _try_inkscape(svg, png)
-            except Exception as ink_err:
+            except (FileNotFoundError, subprocess.CalledProcessError) as ink_err:
                 errors.append(
                     f"rasterize {svg.name}: cairo={cairo_err}; inkscape={ink_err}"
                 )

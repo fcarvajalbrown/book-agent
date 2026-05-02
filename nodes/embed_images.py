@@ -1,4 +1,3 @@
-import os
 import re
 from pathlib import Path
 
@@ -8,7 +7,7 @@ ASSETS_DIR = Path("assets")
 IMAGE_DIR = ASSETS_DIR / "images"
 
 
-def _resolve_image(ref: str, image_map: dict, svg_map: dict) -> str | None:
+def _resolve_image(ref: str, _image_map: dict, svg_map: dict) -> str | None:
     # try direct path first
     candidates = [Path(ref), IMAGE_DIR / ref, ASSETS_DIR / ref]
     for p in candidates:

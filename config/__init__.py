@@ -27,7 +27,10 @@ def get_llm() -> BaseChatModel:
         return ChatOpenAI(**kwargs)
 
     if provider == "anthropic":
-        from langchain_anthropic import ChatAnthropic
+        try:
+            from langchain_anthropic import ChatAnthropic
+        except ImportError as exc:
+            raise ImportError("langchain-anthropic not installed") from exc
         return ChatAnthropic(
             model=model,
             temperature=temperature,
